@@ -14,7 +14,7 @@
 
 Note that Cassandra itself has powerful distribution and consistency capabilities, but in this assignment, you will use Cassandra as a simple, single-node storage system and you will yourself implement the distributed coordination features in your server-side middleware as illustrated in the figure below (and detailed in Section 3).
 
-![Scheme](scheme.jpg)
+![System overview](overview.png)
 
                                     
 
