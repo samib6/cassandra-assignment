@@ -86,3 +86,28 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 2. The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar. It does indeed ensure reliable, in-order message delivery so that you don’t have to worry about networking issues.
 3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader`.
 
+
+### 3.2. [PA2 Part 2]: Distributed middleware for totally ordered writes ###
+
+This part requires you to implement `MyDBReplicatedServer.java` that extends `SingleServer.java` (*NOT* `ReplicatedServer.java`) satisfying the following design requirements:
+
+1. Upon receiving a request, `MyDBReplicatedServer.java` should coordinate with other servers as needed in order to implement totally ordered update operations.
+2. As before, you can not modify `Client.java` and `SingleServer.java`. 
+3. The only Cassandra write operations with which we will test are `create, insert, update, drop, and truncate`.
+4. The `Grader` will only send requests from a single client instance (but the non-blocking API means that concurrent requests will inevitably get dispatched).
+5. Your goal as before is to make the junit tests in Grader pass.
+
+Tip: Use `ReplicatedServer.java` as a starting point, noting that it only implements a simplistic lazy replication approach that may not even be eventually consistent.
+
+Additional tips [here](tips.md).
+
+## 4. Submission instructions ##
+You need to submit the following retaining the original directory structure.
+
+1. `MyDBClient.java` (for part 1 by its due date on Gradescope)
+2. `MyDBSingleServer.java` (for part 1 by its due date on Gradescope)
+3. `MyDBReplicatedServer.java` (for part 2 by its due date on Gradescope)
+4. Each part’s submission must be accompanied by a brief design document (at most two pages) explaining your approach including what you tried even if your submission didn’t pass all tests or work at all. Part 1 should not require more than a paragraph or two to describe your approach.
+
+
+
