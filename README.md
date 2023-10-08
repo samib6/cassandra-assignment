@@ -41,7 +41,7 @@ Have you completed all the steps in the Preparation section just above? If not, 
 
 
 
-### 3.1 [PA2 Part 1]: Single-node data store wrapper ###
+### 3.1 [Part 1]: Single-node data store wrapper ###
 
 This part does not involve any distribution, but simply involves familiarizing ourselves with template code using a non-blocking I/O library and using it to implement a request/response server-side wrapper for Cassandra.
 
@@ -87,15 +87,21 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader`.
 
 
-### 3.2. [PA2 Part 2]: Distributed middleware for totally ordered writes ###
+### 3.2. [Part 2]: Distributed middleware for totally ordered writes ###
 
 This part requires you to implement `MyDBReplicatedServer.java` that extends `SingleServer.java` (*NOT* `ReplicatedServer.java`) satisfying the following design requirements:
 
 1. Upon receiving a request, `MyDBReplicatedServer.java` should coordinate with other servers as needed in order to implement totally ordered update operations.
-2. As before, you can not modify `Client.java` and `SingleServer.java`. 
-3. The only Cassandra write operations with which we will test are `create, insert, update, drop, and truncate`.
-4. The `Grader` will only send requests from a single client instance (but the non-blocking API means that concurrent requests will inevitably get dispatched).
-5. Your goal as before is to make the junit tests in Grader pass.
+2. Your goal as before is to make the junit tests in Grader pass. 
+
+Your code must respect the following constraints and testing assumptions:
+
+1. As before, you can not modify `Client.java` and `SingleServer.java`. 
+2. The only Cassandra write operations with which we will test are `create, insert, update, drop, and truncate`.
+3. The `Grader` will only send requests from a single client instance (but the non-blocking API means that concurrent requests will inevitably get dispatched).
+4. Do not use `sleep` in your client or server code. That would be "cheating" because, as you can see from the Grader's tests, it's ability to blast requests quickly is important to stress test your code.
+5. Do not use any global data structures (i.e., static variables) because a global data structure doesn't exist in a distributed system (but exists in our single-JVM testing environment.)
+ 
 
 Tip: Use `ReplicatedServer.java` as a starting point, noting that it only implements a simplistic lazy replication approach that may not even be eventually consistent.
 
