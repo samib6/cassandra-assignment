@@ -26,7 +26,7 @@ You need to implement the following two programs (shown in yellow) in the figure
 
 You will need to complete the following steps before you can get started on the assignment.
 
-* **Step 1**: Check out the git repository for 590CC using the following shell command
+* **Step 1**: Check out the git repository for 578 using the following shell command
     git clone git@bitbucket.org:distrsys/consistent-db.git
 
 * **Step 2**: You need Java 8 or higher on your machine for the assignment code provided. You may need a higher minor or major version number depending on the Cassandra version you use.
