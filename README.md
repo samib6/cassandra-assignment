@@ -26,12 +26,13 @@ You need to implement the following two programs (shown in yellow) in the figure
 
 You will need to complete the following steps before you can get started on the assignment.
 
-* **Step 1**: Check out the git repository for 578 using the following shell command
-    git clone git@bitbucket.org:distrsys/consistent-db.git
+* **Step 1**: Check out the git repository for 578 using the following shell command:
+    ~~`git clone git@bitbucket.org:distrsys/consistent-db.git`~~
+    `git clone https://avenka@bitbucket.org/distrsys/consistent-db.git`
 
 * **Step 2**: You need Java 8 or higher on your machine for the assignment code provided. You may need a higher minor or major version number depending on the Cassandra version you use.
 
-* **Step 3**: Complete the Cassandra Getting Started tutorial. By the end of the tutorial, you should know how to write a Java client to create a keyspace, create a table, insert some records, read records, delete records, etc.
+* **Step 3**: Complete the Cassandra [Getting Started tutorial](https://docs.google.com/document/d/1pt2GrLv4P-JtvASM0tpqQhf1f58vNtDHagDc2Uef9CY/edit?usp=sharing). By the end of the tutorial, you should know how to write a Java client to create a keyspace, create a table, insert some records, read records, delete records, etc.
 
 ## 3. Assignment Activities ##
 
