@@ -37,6 +37,9 @@ public class Client {
      * that was supplied in callbackSend(.) when the corresponding request
      * was sent is invoked.
      *
+     * Extend this method in MyDBClient to implement your logic there. This
+     * file will be overwritten to the original in your submission.
+     *
      * @param bytes The content of the received response
      * @param header Sender and receiver information about the received response
      */
@@ -72,6 +75,9 @@ public class Client {
      * TODO: This method, unlike the simple send above, should invoke the
      * supplied callback's handleResponse method upon receiving the
      * corresponding response from the remote end.
+     *
+     * Extend this method in MyDBClient to implement your logic there. This
+     * file will be overwritten to the original in your submission.
      *
      * @param isa
      * @param request

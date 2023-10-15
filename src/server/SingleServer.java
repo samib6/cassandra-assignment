@@ -39,6 +39,9 @@ public class SingleServer {
      *    TODO: process request bytes received from clients here by relaying
      *    them to the database server. The default below simply echoes back
      *    the request.
+     *
+     *    Extend this method in MySingleServer to implement your logic there.
+     *    This file will be overwritten to the original in your submission.
       */
     protected void handleMessageFromClient(byte[] bytes, NIOHeader header) {
         // simple echo server
