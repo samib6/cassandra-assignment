@@ -70,7 +70,7 @@ You are given a simple client and a single-node server using non-blocking IO res
 4. Start a Cassandra instance on localhost on the same machine as the server. 
 
 
-5. Your goal is to make the `junit` tests in `Grader.java` in the `test/` directory pass. To this end, you need to write a client `MyDBClient.java` extending `Client.java` and a server `MyDBSingleServer.java` that satisfy the following design requirements:
+5. Your goal is to make the `junit` tests in `GraderSingleServer.java` in the `test/` directory pass. To this end, you need to write a client `MyDBClient.java` extending `Client.java` and a server `MyDBSingleServer.java` that satisfy the following design requirements:
 
     1. The client should be able to continue to send requests as a `String` to the server and have the server execute them on the local Cassandra instance.
     2. The server should send some response back to the client when the operation is complete. It is not important to parse the request or the structure of the response.
@@ -83,9 +83,9 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 
 **Tips**
 
-1. You should be able to test-drive all supplied classes including `Grader` by simply running them using their main methods.
+1. You should be able to test-drive all supplied classes including `Grader*` by simply running them using their main methods.
 2. The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar. It does indeed ensure reliable, in-order message delivery so that you don’t have to worry about networking issues.
-3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader`.
+3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader*`.
 
 
 ### 3.2. [Part 2]: Distributed middleware for totally ordered writes ###
