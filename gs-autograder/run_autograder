@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+
+import json
+import subprocess
+import traceback
+from datetime import datetime
+import os.path as path
+import os
+
+# error message to show to student when an unexpected error has occurred
+UNEXPECTED = "unexpected error; contact the TA with a link to this page"
+
+SUBMISSION_DIR = "/autograder/submission"
+SOURCE_DIR = "/autograder/source"
+RESULTS_DIR = "/autograder/results"
+END_RESULTS = f"{RESULTS_DIR}/results.json"
+
+
+class SubmissionError(Exception):
+    def __init__(self, msg, extra_msg=""):
+        self.msg = msg
+        self.extra_msg = extra_msg
+
+
+def main():
+    print(datetime.now())
+    print()
+    print("begin setup")
+    print()
+
+    # Check if the required files exist
+    output = ""
+    output += "Expecting to find the following files:\n"
+
+    client_exists = path.exists(f"{SUBMISSION_DIR}/src/client/MyDBClient.java")
+    output += "src/client/MyDBClient.java ... "
+    output += "found" if client_exists else "NOT FOUND"
+    output += "\n"
+
+    server_exists = path.exists(
+        f"{SUBMISSION_DIR}/src/server/MyDBSingleServer.java")
+    output += "src/server/MyDBSingleServer.java ... "
+    output += "found" if server_exists else "NOT FOUND"
+    output += "\n"
+
+    document_exists = path.exists(f"{SUBMISSION_DIR}/Design.pdf")
+    output += "Design.pdf ... "
+    output += "found" if document_exists else "NOT FOUND"
+    output += "\n"
+
+    if not (client_exists and server_exists):
+        raise SubmissionError(output)
+
+    # Reset the source directory
+    output += "Resetting all other files to their original form\n"
+    run(f"rm {SOURCE_DIR}/framework/src/client/MyDBClient.java")
+    run(f"rm {SOURCE_DIR}/framework/src/server/MyDBSingleServer.java")
+    run(f"mv src/client/MyDBClient.java {SOURCE_DIR}/framework/src/client/MyDBClient.java")
+    run(f"mv src/server/MyDBSingleServer.java {SOURCE_DIR}/framework/src/server/MyDBSingleServer.java")
+    run("rm -r *")
+    run(f"cp -r {SOURCE_DIR}/framework/* .")  # copy framework files to autograder home
+
+    # Complie the code
+    output += "Compiling...\n"
+    print()
+    print("compiling...")
+    print()
+
+    jar_files = ["lib/" + x for x in os.listdir(f"{SUBMISSION_DIR}/lib")]
+    java_files = [
+        "src/client/Client.java",
+        "src/client/MyDBClient.java",
+        "src/server/SingleServer.java",
+        "src/server/MyDBSingleServer.java",
+        "src/server/ReplicatedServer.java",
+        "src/server/MyDBReplicatedServer.java",
+        "test/GraderSingleServer.java",
+        "test/GraderSingleServerGradescope.java"]
+
+    compile_proc = run(
+        f"javac -cp {':'.join(jar_files)} {' '.join(java_files)}",
+        capture_output=True
+    )
+    compile_proc_stdout = compile_proc.stdout.decode('utf-8')
+    compile_proc_stderr = compile_proc.stderr.decode('utf-8')
+
+    print(compile_proc.args)
+    print("compilation stdout:")
+    print(compile_proc_stdout)
+    print()
+    print("compilation stderr:")
+    print(compile_proc_stderr)
+    print()
+
+    if compile_proc.returncode != 0:
+        output += "Java compilation error:\n"
+        output += compile_proc_stderr
+        raise SubmissionError(output)
+
+    output += "Compilation successful\n"
+
+
+    # ============================================================
+    output += "All expected .java files found and successfully compiled. "
+    # output += "There are no automatic tests. All submission will be manually run against the public tests you were given in the assignment."
+    # output += "Autograder coming soon; it will only run the public tests you were given in the assignment."
+
+    # result = {}
+    # result["score"] = 0.0
+    # result["output"] = output
+    # return result
+    # ============================================================
+
+    # # run("cassandra")
+    # # run(
+    # #     "cqlsh -e \"CREATE KEYSPACE demo WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"")
+
+    output += "Starting cassandra...\n"
+    run("/autograder/source/before_run_autograder.sh")
+
+    output += "Running Tests...\n"
+    print()
+    print("running tests...")
+    print()
+
+    run_proc = run(
+        f"java -cp src:test:{':'.join(jar_files)} GraderSingleServerGradescope",
+        capture_output=True
+    )
+    run_proc_stdout = run_proc.stdout.decode('utf-8')
+    run_proc_stderr = run_proc.stderr.decode('utf-8')
+
+    print(run_proc.args)
+    print("runtime stdout:")
+    print(run_proc_stdout)
+    print()
+    print("runtime stderr:")
+    print(run_proc_stderr)
+    print()
+
+    if run_proc.returncode != 0:
+        output += "Java runtime error\n"
+        raise SubmissionError(output)
+
+    output += "Tests finished running successfully\n"
+
+    #start_pos = run_proc_stdout.rfind('{')  # get the position of the last occurrence of {
+    #if start_pos != -1:
+    #    json_content = run_proc_stdout[start_pos:]
+    #    print(json_content)
+    #    result = json.loads(json_content)
+    #    result["output"] = output
+    #else:
+    #    raise SubmissionError("No JSON content found in run_proc_stdout.")
+
+
+    #result = json.loads(run_proc_stdout)
+    #result["output"] = output
+    result = {}
+    result["score"] = 10.0
+    result["output"] = run_proc_stdout
+    result["extra_data"] = {}
+
+    output += "Clean up kep space...\n"
+    run("/autograder/source/after_run_autograder.sh")
+
+    return result
+
+
+def filter_unwanted_messages(output):
+    # List of unwanted messages or warnings
+    unwanted_patterns = [
+        "WARNING: An illegal reflective access operation has occurred",
+        "WARNING: Illegal reflective access",
+        "WARNING: Please consider reporting this to the maintainers of",
+        "WARNING: Use --illegal-access=warn to enable warnings",
+        "WARNING: All illegal access operations will be denied",
+        "Netty Epoll Transport",
+        "Platform Low-Level API",
+        "INFO",
+        "NIOTransport",
+        "handleMessageFromClient"
+    ]
+    # Filter out unwanted lines
+    lines = output.split("\n")
+    filtered_lines = [line for line in lines if not any(pattern in line for pattern in unwanted_patterns)]
+    return "\n".join(filtered_lines)
+
+
+
+# def run(cmd, capture_output=False):
+    # stdout = subprocess.PIPE if capture_output else None
+    # stderr = subprocess.PIPE if capture_output else None
+
+    # return subprocess.run(cmd, cwd=SUBMISSION_DIR, shell=True, stdout=stdout, stderr=stderr)
+
+
+def run(cmd, capture_output=False):
+    stdout = subprocess.PIPE if capture_output else None
+    stderr = subprocess.PIPE if capture_output else None
+
+    proc = subprocess.run(cmd, cwd=SUBMISSION_DIR, shell=True, stdout=stdout, stderr=stderr)
+    if capture_output:
+        proc.stdout = filter_unwanted_messages(proc.stdout.decode('utf-8')).encode('utf-8')
+        proc.stderr = filter_unwanted_messages(proc.stderr.decode('utf-8')).encode('utf-8')
+    return proc
+
+def output_json(data):
+    with open(END_RESULTS, "w") as f:
+        json.dump(data, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+if __name__ == "__main__":
+    try:
+        result = main()
+    except SubmissionError as err:
+        result = {}
+        result["score"] = 0.0
+        result["output"] = err.msg
+        result["extra_data"] = {}
+        result["extra_data"]["extra_msg"] = err.extra_msg
+        result["extra_data"]["err_tb"] = traceback.format_exc()
+    except Exception as err:
+        result = {}
+        result["score"] = 0.0
+        result["output"] = UNEXPECTED
+        result["extra_data"] = {}
+        result["extra_data"]["err_msg"] = str(err)
+        result["extra_data"]["err_tb"] = traceback.format_exc()
+
+    try:
+        output_json(result)
+        print()
+        print(END_RESULTS)
+        print()
+        with open(END_RESULTS) as f:
+            print(f.read())
+    except:
+        traceback.print_exc()
