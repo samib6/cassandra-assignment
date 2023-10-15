@@ -52,7 +52,7 @@ public class GraderSingleServer extends DefaultTest {
     protected static NodeConfig<String> nodeConfigServer;
 
     protected static NodeConfig<String> nodeConfigClient;
-    protected static final boolean GRADING_MODE = false;//true;
+    protected static final boolean GRADING_MODE = true;
 
     protected static final int NUM_REQS = 100;
 
