@@ -31,7 +31,15 @@ public class Client {
                 });
     }
 
-    // TODO: process responses received from server
+    /** TODO: This method will automatically get invoked whenever any response
+     * is received from a remote node. You need to implement logic here to
+     * ensure that whenever a response is received, the callback method
+     * that was supplied in callbackSend(.) when the corresponding request
+     * was sent is invoked.
+     *
+     * @param bytes The content of the received response
+     * @param header Sender and receiver information about the received response
+     */
     protected void handleResponse(byte[] bytes, NIOHeader header) {
         // expect echo reply by default here
         try {

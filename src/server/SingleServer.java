@@ -35,7 +35,11 @@ public class SingleServer {
                 });
     }
 
-    // TODO: process bytes received from clients here
+    /**
+     *    TODO: process request bytes received from clients here by relaying
+     *    them to the database server. The default below simply echoes back
+     *    the request.
+      */
     protected void handleMessageFromClient(byte[] bytes, NIOHeader header) {
         // simple echo server
         try {
