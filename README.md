@@ -84,7 +84,7 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 **Tips**
 
 1. You should be able to test-drive all supplied classes including `Grader*` by simply running them using their main methods.
-2. The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar. It does indeed ensure reliable, in-order message delivery so that you don’t have to worry about networking issues.
+2. ~~The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar `gigapaxos-nio-src.jar`. It does indeed ensure reliable message delivery so that you don’t have to worry about networking issues.~~ You don't need to understand details of how nio works for this assignment, just that it provides reliable delivery.
 3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader*`.
 
 
