@@ -18,4 +18,9 @@ public class MyDBSingleServer extends SingleServer {
                             String keyspace) throws IOException {
         super(isa, isaDB, keyspace);
     }
+
+    public void close() {
+        super.close();
+        // TODO: cleanly close anything you created here.
+    }
 }
