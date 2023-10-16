@@ -46,9 +46,7 @@ Have you completed all the steps in the Preparation section just above? If not, 
 
 This part does not involve any distribution, but simply involves familiarizing ourselves with template code using a non-blocking I/O library and using it to implement a request/response server-side wrapper for Cassandra.
 
-You are given a simple client and a single-node server using non-blocking IO respectively at
-* client.Client.java
-* server.SingleServer.java
+You are given a simple client and a single-node server using non-blocking IO respectively at `client.Client.java` and `server.SingleServer.java`.
 
 `Client` sends requests to and processes responses from `SingleServer`. You need to extend the template code therein so that `SingleServer` dispatches requests received from `Client` to the local Cassandra instance and sends responses back to that Client. To this end, proceed in the following steps:
 
@@ -77,7 +75,7 @@ You are given a simple client and a single-node server using non-blocking IO res
     3. The server should connect to a keyspace name provided in its constructor.
     4. `MyDBClient.java` should extend `Client.java` and `MyDBSingleServer.java` should extend `SingleServer.java` as indicated.
     5. The classes `Client.java` and `SingleServer.java` can not be modified. As a consequence, the final method `Client.send` can also not be modified.
-    6. The method `Client.callbackSend` is the key method you need to override and it should, as documented, invoke the callback upon (and only upon) completing the execution of the request it previously sent to the server. 
+    6. The method `Client.callbackSend` is ~~the~~ a key method you need to override and it should, as documented, invoke the callback upon (and only upon) completing the execution of the request it previously sent to the server. 
     
 Note that the simple `Client.send` is non-blocking and is the only way to send requests to the server, and `Client.handleResponse` is the only place it receives responses. So if you call the supplied callback immediately after sending the request in callbackSend, that would be incorrect. You need to implement logic to match a received response with the corresponding previously sent request. For example, you could include a unique request identifier in each request and its corresponding response in order to match the two.
 
@@ -86,6 +84,7 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 1. You should be able to test-drive all supplied classes including `Grader*` by simply running them using their main methods.
 2. ~~The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar `gigapaxos-nio-src.jar`. It does indeed ensure reliable message delivery so that you don’t have to worry about networking issues.~~ You don't need to understand details of how nio works for this assignment, just that it provides reliable delivery.
 3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader*`.
+4. Methods in `Client.java` and `SingleServer.java` whose behavior needs to be modified are marked TODO and accordingly need to be overwritten in the child classes you implement.
 
 
 ### 3.2. [Part 2]: Distributed middleware for totally ordered writes ###
