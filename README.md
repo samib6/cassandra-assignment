@@ -98,7 +98,7 @@ Your code must respect the following constraints and testing assumptions:
 
 1. As before, you can not modify `Client.java` and `SingleServer.java`. 
 2. The only Cassandra *write* operations with which we will test are `create, insert, update, drop, and truncate`. All other operations are considered *reads*.
-3. The `Grader` will only send requests from a single client instance, but the non-blocking API means that concurrent requests will inevitably get dispatched.
+3. The `Grader` ~~will~~ currently only sends requests from a single client instance, but the non-blocking API means that concurrent requests will inevitably get dispatched. Your design must work correctly even when tested with multiple client instances.
 4. Do not use `sleep` in your client or server code. That would be "cheating" because, as you can see from the Grader's tests, it's ability to blast requests quickly is important to stress test your code.
 5. Do not use any global data structures (i.e., static variables) because a global data structure doesn't exist in a distributed system (but exists in our single-JVM testing environment.)
 6. As before, the server receiving a client request should send some response back to that client, but with the following modified requirement: for write operations, the response conveys *globally committed* semantics, i.e., the write has been executed by every replica server (thus a subsequent read at any server replica must reflect completion of that write).
