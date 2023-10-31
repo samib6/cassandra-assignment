@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @FixMethodOrder(org.junit.runners.MethodSorters.NAME_ASCENDING)
 public class GraderSingleServer extends DefaultTest {
@@ -168,14 +171,52 @@ public class GraderSingleServer extends DefaultTest {
     @Test
     @GradedTest(name = "test05_CreateTable_Sync()", max_score = 10)
     public void test05_CreateTable_Sync() throws IOException, InterruptedException {
+        // executing directly as opposed to sending via the client ensures
+        // that the drop table command doesn't get reordered and executed
+        // after the create.
         session.execute(getDropTableCmd(TABLE, DEFAULT_KEYSPACE));
         testCreateTable(true, false);
     }
 
+    @Test
+    @GradedTest(name = "test06_MultipleOperations_Sync()", max_score = 10)
+    public void test06_MultipleOperations_Sync() throws IOException,
+            InterruptedException {
+        session.execute(getCreateTableCmd(TABLE, DEFAULT_KEYSPACE));
+
+        // add records
+        int numInserts = 10;
+        clearTableRecords();
+
+        ScheduledThreadPoolExecutor executor =
+                new ScheduledThreadPoolExecutor(numInserts);
+        for (int i = 0; i < numInserts; i++) {
+            final int j = i;
+            // wait and check
+            executor.execute(new Runnable() {
+                public void run() {
+                    try {
+                        int ssn = (int) (Math.random() * Integer.MAX_VALUE);
+                        waitResponse(callbackSend(DEFAULT_SADDR, "insert into "
+                                + DEFAULT_KEYSPACE + "." + TABLE + " " +
+                                "(ssn, " + "firstname, " + "lastname) " +
+                                "values (" + ssn + ", '" + "John" + j + "', " +
+                                "'" + "Smith" + j + "')"));
+                        ResultSet results = session.execute("select ssn from "
+                                + TABLE + " " + "where " + "ssn=" + ssn);
+                        Assert.assertTrue(results.one().getInt(0) == ssn);
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
+                }
+            });
+        }
+        while(!outstanding.isEmpty());
+        clearTableRecords();
+        executor.shutdown();
+    }
 
 
-
-    // The cleanup tests below will always succceed.
 
 
     protected void testCreateTable(boolean single, boolean sleep) throws
