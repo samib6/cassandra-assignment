@@ -6,5 +6,7 @@
 5. Do not use System.currentTimeMillis() or System.nanoTime() or such. You can not assume a globally synchronized clock in a distributed system. Your code should work correctly even if we test it on different physical machines.
 6. You can rest assured that there will be no process failures in the test environment. The assignment is only testing consistency, not fault tolerance.
 7. You can NOT assume FIFO delivery, i.e., you can not assume that handleResponse(m1) will be called before handleResponse(m2) at a given receiving node even if m1 was sent before m2 and both were sent by the same sender. This is true even though we use TCP because of the multithreaded nature of the underlying nio library.
+8. handleMessage(m1) is not guaranteed to be isolated from handleMessage(m2) for two messages m1 and m2, i.e., their execution may be concurrent (again because the underlying NIO library is multi-threaded), so you must ensure that your replicated server implementation is thread-safe.
+9. Design requirement 6 on the response conveying globally committed semantics will be tested only using `callbackSend`. Note the simple `Cliend.send` can not be modified, so it is not possible for the entry server to correctly send back a committed response for requests sent via that simple send. 
 
 (More to be added if/as needed.)

@@ -91,16 +91,17 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 
 This part requires you to implement `MyDBReplicatedServer.java` that extends `SingleServer.java` (*NOT* `ReplicatedServer.java`) satisfying the following design requirements:
 
-1. Upon receiving a request, `MyDBReplicatedServer.java` should coordinate with other servers as needed in order to implement totally ordered update operations.
+1. Upon receiving a request, `MyDBReplicatedServer.java` should coordinate with other servers as needed in order to implement totally ordered write operations.
 2. Your goal as before is to make the junit tests in Grader pass. 
 
 Your code must respect the following constraints and testing assumptions:
 
 1. As before, you can not modify `Client.java` and `SingleServer.java`. 
-2. The only Cassandra write operations with which we will test are `create, insert, update, drop, and truncate`.
-3. The `Grader` will only send requests from a single client instance (but the non-blocking API means that concurrent requests will inevitably get dispatched).
+2. The only Cassandra *write* operations with which we will test are `create, insert, update, drop, and truncate`. All other operations are considered *reads*.
+3. The `Grader` ~~will~~ currently only sends requests from a single client instance, but the non-blocking API means that concurrent requests will inevitably get dispatched. Your design must work correctly even when tested with multiple client instances.
 4. Do not use `sleep` in your client or server code. That would be "cheating" because, as you can see from the Grader's tests, it's ability to blast requests quickly is important to stress test your code.
 5. Do not use any global data structures (i.e., static variables) because a global data structure doesn't exist in a distributed system (but exists in our single-JVM testing environment.)
+6. As before, the server receiving a client request should send some response back to that client, but with the following modified requirement: for write operations, the response conveys *globally committed* semantics, i.e., the write has been executed by every replica server (thus a subsequent read at any server replica must reflect completion of that write).
  
 
 Tip: Use `ReplicatedServer.java` as a starting point, noting that it only implements a simplistic lazy replication approach that may not even be eventually consistent.
@@ -110,9 +111,8 @@ Additional tips [here](tips.md).
 ## 4. Submission instructions ##
 You need to submit the following retaining the original directory structure.
 
-1. `MyDBClient.java` (for part 1 by its due date on Gradescope)
-2. `MyDBSingleServer.java` (for part 1 by its due date on Gradescope)
-3. `MyDBReplicatedServer.java` (for part 2 by its due date on Gradescope)
+1. `MyDBClient.java` and `MyDBSingleServer.java` for part 1 by its due date on Gradescope;
+3. `MyDBClient.java` and `MyDBReplicatedServer.java` for part 2 by its due date on Gradescope. `MyDBClient.java` does not need any new logic compared to part 1, but if you didn't get part 1 right, make sure you include a functional client in your part 2 submission.
 4. Each part’s submission must be accompanied by a brief design document (at most two pages) explaining your approach including what you tried even if your submission didn’t pass all tests or work at all. Part 1 should not require more than a paragraph or two to describe your approach.
 
 
