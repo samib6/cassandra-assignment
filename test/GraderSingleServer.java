@@ -22,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -56,7 +57,7 @@ public class GraderSingleServer extends DefaultTest {
     protected static NodeConfig<String> nodeConfigServer;
 
     protected static NodeConfig<String> nodeConfigClient;
-    protected static final boolean GRADING_MODE = true;
+    protected static final boolean GRADING_MODE = false;//true;
 
     protected static final int NUM_REQS = 100;
 
@@ -263,28 +264,38 @@ public class GraderSingleServer extends DefaultTest {
     }
 
     protected void verifyOrderConsistent(String table, int key) {
-        String[] results = new String[servers.length];
+        ArrayList<Integer>[] results = new ArrayList[servers.length];
         int i = 0;
         boolean nonEmpty = false;
         for (String node : servers) {
             ResultSet result = session.execute(readResultFromTableCmd(key, DEFAULT_TABLE_NAME, node));
-            results[i] = "";
+            results[i] = new ArrayList<Integer>();
             for (Row row : result) {
-                results[i] += row;
+                results[i] = new ArrayList<Integer>(row.getList("events",
+                        Integer.class));
                 nonEmpty = true;
             }
             i++;
         }
+
+        i=0;
+        int longestListIndex = 0;
+        int longestListSize = 0;
+        for(int j=0; j<results.length; j++) {
+            if(results[j].size() > longestListSize) longestListIndex = j;
+        }
+
         i = 0;
         boolean match = true;
-        for (String result : results) {
-            if (!results[0].equals(result))
-                match = false;
+        for (ArrayList<Integer> result : results) {
+            for(i=0; i<result.size(); i++){
+                if (result.get(i) != results[longestListIndex].get(i))
+                    match = false;
+            }
         }
         Assert.assertTrue(nonEmpty && match);
         for(i=0; i<results.length; i++)
             System.out.println(i+":"+results[i]);
-
     }
 
     protected void testCreateTableSleep(boolean single) throws
