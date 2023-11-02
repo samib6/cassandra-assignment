@@ -263,7 +263,8 @@ public class GraderSingleServer extends DefaultTest {
         Assert.assertTrue(match);
     }
 
-    protected void verifyOrderConsistent(String table, int key) {
+    protected void verifyOrderConsistent(String table, int key,
+										 boolean strict, int numExpected) {
         ArrayList<Integer>[] results = new ArrayList[servers.length];
         int i = 0;
         boolean nonEmpty = false;
@@ -290,18 +291,45 @@ public class GraderSingleServer extends DefaultTest {
 
         i = 0;
         boolean match = true;
+		String message="[\n";
         for (ArrayList<Integer> result : results) {
             for(i=0; i<result.size(); i++){
-                if (result.get(i) != results[longestListIndex].get(i))
-                    match = false;
+				// prefix match
+                if (!result.get(i).equals(results[longestListIndex].get(i))) {
+					match = false;
+					message += result + "\n!=(prefix mismatch at location " + i +
+				": " + result.get(i) + "!=" + results[longestListIndex].get(i) +
+							")\n" + results[longestListIndex] +")\n";
+					break;
+				}
+				// prefix match and sequence size match
+				if(strict && result.size() != results[longestListIndex].size()) {
+					match = false;
+					message += "result size " + result.size() + "   !=  " +
+						"longestSize=" + results[longestListIndex].size() + "\n";
+					break;
+				}
+				// prefix match and sequence size == numExpected
+				if(strict && numExpected > 0 && result.size() != numExpected) {
+					match = false;
+					message += "result size " + result.size() + "  !=  " +
+						"numExpected " + numExpected + "\n";
+					break;
+				}
+
             }
+			if(!match) break;
         }
-        Assert.assertTrue(nonEmpty && match);
+        Assert.assertTrue(message, nonEmpty && match);
         for(i=0; i<results.length; i++)
             System.out.println(i+":"+results[i]);
     }
 
-    protected void testCreateTableSleep(boolean single) throws
+	protected void verifyOrderConsistent(String table, int key) {
+		this.verifyOrderConsistent(table, key, false, 0);
+	}
+
+		protected void testCreateTableSleep(boolean single) throws
             InterruptedException, IOException {
         send(getDropTableCmd(TABLE, DEFAULT_KEYSPACE), single);
         Thread.sleep(SLEEP);
