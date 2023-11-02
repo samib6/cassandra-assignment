@@ -57,7 +57,7 @@ public class GraderSingleServer extends DefaultTest {
     protected static NodeConfig<String> nodeConfigServer;
 
     protected static NodeConfig<String> nodeConfigClient;
-    protected static final boolean GRADING_MODE = false;//true;
+    protected static final boolean GRADING_MODE = true;
 
     protected static final int NUM_REQS = 100;
 
@@ -282,7 +282,10 @@ public class GraderSingleServer extends DefaultTest {
         int longestListIndex = 0;
         int longestListSize = 0;
         for(int j=0; j<results.length; j++) {
-            if(results[j].size() > longestListSize) longestListIndex = j;
+            if(results[j].size() > longestListSize) {
+				longestListIndex = j;
+				longestListSize = results[j].size();
+			}
         }
 
         i = 0;
