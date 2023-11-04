@@ -393,14 +393,15 @@ public class GraderSingleServer extends DefaultTest {
 
     // timeout is in millis
     protected void waitResponse(Long id, long timeout) {
+        long t = System.currentTimeMillis();
         synchronized (id) {
-            while (outstanding.containsKey(id))
-                try {
-                    if(timeout < 0) id.wait();
-                    else id.wait(timeout);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            while (outstanding.containsKey(id)) try {
+                if (timeout < 0) id.wait();
+                else if (System.currentTimeMillis() - t < timeout)
+                    id.wait(timeout);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
