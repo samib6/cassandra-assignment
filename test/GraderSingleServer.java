@@ -177,6 +177,8 @@ public class GraderSingleServer extends DefaultTest {
         // after the create.
         session.execute(getDropTableCmd(TABLE, DEFAULT_KEYSPACE));
         testCreateTable(true, false);
+        Assert.assertTrue("Callback supplied in callbackSend not invoked",
+                outstanding.isEmpty());
     }
 
     @Test
