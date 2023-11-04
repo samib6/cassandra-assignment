@@ -95,7 +95,7 @@ public class GraderSingleServer extends DefaultTest {
      * @throws InterruptedException
      */
     @Test
-    @GradedTest(name = "test01_DefaultAsync()", max_score = 10)
+    @GradedTest(name = "test01_DefaultAsync()", max_score = 0)
     public void test01_DefaultAsync() throws IOException,
             InterruptedException {
         client.send(DEFAULT_SADDR, "select table_name from system_schema" +
@@ -111,7 +111,7 @@ public class GraderSingleServer extends DefaultTest {
      * @throws InterruptedException
      */
     @Test
-    @GradedTest(name = "test02_Single_CreateTable_Async()", max_score = 10)
+    @GradedTest(name = "test02_Single_CreateTable_Async()", max_score = 5)
     public void test02_Single_CreateTable_Async() throws IOException,
             InterruptedException {
         dropTableIfExists();
@@ -129,7 +129,7 @@ public class GraderSingleServer extends DefaultTest {
      * @throws InterruptedException
      */
     @Test
-    @GradedTest(name = "test03_InsertRecords_Async()", max_score = 10)
+    @GradedTest(name = "test03_InsertRecords_Async()", max_score = 5)
     public void test03_InsertRecords_Async() throws IOException, InterruptedException {
         int numInserts = 10;
         clearTableRecords();
@@ -150,7 +150,7 @@ public class GraderSingleServer extends DefaultTest {
      * @throws InterruptedException
      */
     @Test
-    @GradedTest(name = "test04_DeleteRecords_Async()", max_score = 10)
+    @GradedTest(name = "test04_DeleteRecords_Async()", max_score = 5)
     public void test04_DeleteRecords_Async() throws IOException, InterruptedException {
         send("truncate users", true);
         Thread.sleep(SLEEP);
@@ -182,7 +182,7 @@ public class GraderSingleServer extends DefaultTest {
     }
 
     @Test
-    @GradedTest(name = "test06_MultipleOperations_Sync()", max_score = 10)
+    @GradedTest(name = "test06_MultipleOperations_Sync()", max_score = 5)
     public void test06_MultipleOperations_Sync() throws IOException,
             InterruptedException {
         session.execute(getCreateTableCmd(TABLE, DEFAULT_KEYSPACE));
