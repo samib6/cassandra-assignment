@@ -349,9 +349,9 @@ public class GraderSingleServer extends DefaultTest {
     protected void testCreateTableBlocking(boolean single) throws
             InterruptedException, IOException {
         waitResponse(callbackSend(DEFAULT_SADDR, getDropTableCmd(TABLE,
-                DEFAULT_KEYSPACE)), SLEEP);
+                DEFAULT_KEYSPACE)), SLEEP*2);
         waitResponse(callbackSend(DEFAULT_SADDR, getCreateTableCmd(TABLE,
-                DEFAULT_KEYSPACE)), SLEEP);
+                DEFAULT_KEYSPACE)), SLEEP*2);
     }
 
     protected Long callbackSend(InetSocketAddress isa, String request) throws
