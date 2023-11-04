@@ -14,6 +14,6 @@
 	* With the modified `Grader:verifyOrderConsistent` in the latest commit, this tip is no longer necessary.
 	
 12. Your protocol must not arbitrarily lose some requests as there is no reason for message loss in the assignment, so the implicit expectation is that if, say, 100 writes are sent, 100 writes must get completed *eventually*, i.e., after a sufficiently long time of waiting for the protocol to propagate all writes to all servers (otherwise a trivial, unacceptable way of ensuring totally ordered writes would be to do no writes at all).
-13. If you contact us with any Gradesccope issue, please start your message with "*I have verified that my code consistently passes all `Grader` tests and terminates gracecfully on  my local machine...*", otherwise you are still developing, so it's too soon to go to Gradescope as it is simply not a good environment to test or debug your design or code.
+13. If you contact us with any Gradesccope issue, please start your message with "*I have verified that my code consistently passes all `Grader` tests and terminates gracefully on  my local machine...*", otherwise you are still developing, so it's too soon to go to Gradescope as it is simply not a good environment to test or debug your design or code.
 
 (More to be added if/as needed.)
