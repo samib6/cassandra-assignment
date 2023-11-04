@@ -186,7 +186,7 @@ public class GraderSingleServer extends DefaultTest {
         session.execute(getCreateTableCmd(TABLE, DEFAULT_KEYSPACE));
 
         // add records
-        int numInserts = 10;
+        int numInserts = 20;
         clearTableRecords();
 
         ScheduledThreadPoolExecutor executor =
@@ -212,9 +212,13 @@ public class GraderSingleServer extends DefaultTest {
                 }
             });
         }
-        while(!outstanding.isEmpty());
+        long t1=System.currentTimeMillis();
+        while(!outstanding.isEmpty() && (System.currentTimeMillis()-t1) < SLEEP*10)
+            Thread.sleep(SLEEP);
         clearTableRecords();
         executor.shutdown();
+        Assert.assertTrue("Some callbackSends never got invoked",
+                outstanding.isEmpty());
     }
 
 
@@ -306,7 +310,7 @@ public class GraderSingleServer extends DefaultTest {
 				if(strict && result.size() != results[longestListIndex].size()) {
 					match = false;
 					message += "result size " + result.size() + "   !=  " +
-						"longestSize=" + results[longestListIndex].size() + "\n";
+						"longestSize " + results[longestListIndex].size() + "\n";
 					break;
 				}
 				// prefix match and sequence size == numExpected
@@ -342,8 +346,10 @@ public class GraderSingleServer extends DefaultTest {
 
     protected void testCreateTableBlocking(boolean single) throws
             InterruptedException, IOException {
-        waitResponse(callbackSend(DEFAULT_SADDR, getDropTableCmd(TABLE, DEFAULT_KEYSPACE)));
-        waitResponse(callbackSend(DEFAULT_SADDR, getCreateTableCmd(TABLE, DEFAULT_KEYSPACE)));
+        waitResponse(callbackSend(DEFAULT_SADDR, getDropTableCmd(TABLE,
+                DEFAULT_KEYSPACE)), SLEEP);
+        waitResponse(callbackSend(DEFAULT_SADDR, getCreateTableCmd(TABLE,
+                DEFAULT_KEYSPACE)), SLEEP);
     }
 
     protected Long callbackSend(InetSocketAddress isa, String request) throws
@@ -383,19 +389,25 @@ public class GraderSingleServer extends DefaultTest {
         return id;
     }
 
-    protected void waitResponse(Long id) {
+    // timeout is in millis
+    protected void waitResponse(Long id, long timeout) {
         synchronized (id) {
             while (outstanding.containsKey(id))
                 try {
-                    id.wait();
+                    if(timeout < 0) id.wait();
+                    else id.wait(timeout);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
         }
     }
 
+    protected void waitResponse(Long id) {
+        this.waitResponse(id, -1);
+    }
 
-    protected static final void send(String cmd, boolean single) throws
+
+        protected static final void send(String cmd, boolean single) throws
             IOException {
         client.send(single ? DEFAULT_SADDR :
                         serverMap.get(servers[(int) (Math.random() * servers.length)]),
