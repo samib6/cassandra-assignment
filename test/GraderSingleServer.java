@@ -399,6 +399,7 @@ public class GraderSingleServer extends DefaultTest {
                 if (timeout < 0) id.wait();
                 else if (System.currentTimeMillis() - t < timeout)
                     id.wait(timeout);
+                else break;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
