@@ -3,6 +3,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.gradescope.jh61b.grader.GradedTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -70,6 +71,7 @@ public class Grader extends GraderSingleServer {
      * @throws InterruptedException
      */
     @Test
+    @GradedTest(name = "test10_CreateTables()", max_score = 0)
     public void test10_CreateTables() throws IOException, InterruptedException {
         for (String node : servers) {
             // create default table, node is the keypsace name
@@ -90,6 +92,7 @@ public class Grader extends GraderSingleServer {
      * @throws InterruptedException
      */
     @Test
+    @GradedTest(name = "test11_UpdateRecord_SingleServer()", max_score = 5)
     public void test11_UpdateRecord_SingleServer() throws IOException, InterruptedException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -115,6 +118,7 @@ public class Grader extends GraderSingleServer {
      * @throws InterruptedException
      */
     @Test
+    @GradedTest(name = "test12_UpdateRecord_AllServer()", max_score = 5)
     public void test12_UpdateRecord_AllServer() throws IOException, InterruptedException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -139,6 +143,7 @@ public class Grader extends GraderSingleServer {
      * @throws IOException
      */
     @Test
+    @GradedTest(name = "test13_UpdateRecord_RandomServer()", max_score = 5)
     public void test13_UpdateRecord_RandomServer() throws InterruptedException, IOException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -164,6 +169,7 @@ public class Grader extends GraderSingleServer {
      * @throws IOException
      */
     @Test
+    @GradedTest(name = "test14_UpdateRecordFaster_RandomServer()", max_score = 5)
     public void test14_UpdateRecordFaster_RandomServer() throws InterruptedException, IOException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -192,6 +198,7 @@ public class Grader extends GraderSingleServer {
      * @throws IOException
      */
     @Test
+    @GradedTest(name = "test15_UpdateRecordMuchFaster_RandomServer()", max_score = 5)
     public void test15_UpdateRecordMuchFaster_RandomServer() throws InterruptedException, IOException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -219,6 +226,7 @@ public class Grader extends GraderSingleServer {
      * @throws IOException
      */
     @Test
+    @GradedTest(name = "test16_UpdateRecordFastest_RandomServer()", max_score = 5)
     public void test16_UpdateRecordFastest_RandomServer() throws InterruptedException, IOException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
@@ -246,6 +254,7 @@ public class Grader extends GraderSingleServer {
      * @throws IOException
      */
     @Test
+    @GradedTest(name = "test17_UpdateRecordFastest_RandomServer_Reliably()", max_score = 10)
     public void test17_UpdateRecordFastest_RandomServer_Reliably() throws InterruptedException, IOException {
         // generate a random key for this test
         int key = ThreadLocalRandom.current().nextInt();
