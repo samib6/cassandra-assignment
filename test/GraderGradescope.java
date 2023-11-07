@@ -27,6 +27,6 @@ public class GraderGradescope extends GraderSingleServer {
 
         JUnitCore runner = new JUnitCore();
         runner.addListener(new GradedTestListenerJSON());
-        Result r = runner.run(GraderSingleServer.class);
+        Result r = runner.run(Grader.class);
     }
 }
