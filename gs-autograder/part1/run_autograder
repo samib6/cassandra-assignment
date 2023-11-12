@@ -6,6 +6,7 @@ import traceback
 from datetime import datetime
 import os.path as path
 import os
+import re
 
 # error message to show to student when an unexpected error has occurred
 UNEXPECTED = "unexpected error; contact the TA with a link to this page"
@@ -51,6 +52,7 @@ def main():
     if not (client_exists and server_exists):
         raise SubmissionError(output)
 
+    # ============================================================
     # Reset the source directory
     output += "Resetting all other files to their original form\n"
     run(f"rm {SOURCE_DIR}/framework/src/client/MyDBClient.java")
@@ -58,8 +60,10 @@ def main():
     run(f"mv src/client/MyDBClient.java {SOURCE_DIR}/framework/src/client/MyDBClient.java")
     run(f"mv src/server/MyDBSingleServer.java {SOURCE_DIR}/framework/src/server/MyDBSingleServer.java")
     run("rm -r *")
-    run(f"cp -r {SOURCE_DIR}/framework/* .")  # copy framework files to autograder home
+    run(f"cp -r {SOURCE_DIR}/framework/* .")
+    # ============================================================
 
+    # ============================================================
     # Complie the code
     output += "Compiling...\n"
     print()
@@ -99,25 +103,18 @@ def main():
 
     output += "Compilation successful\n"
 
-
-    # ============================================================
     output += "All expected .java files found and successfully compiled. "
-    # output += "There are no automatic tests. All submission will be manually run against the public tests you were given in the assignment."
-    # output += "Autograder coming soon; it will only run the public tests you were given in the assignment."
-
-    # result = {}
-    # result["score"] = 0.0
-    # result["output"] = output
-    # return result
     # ============================================================
 
-    # # run("cassandra")
-    # # run(
-    # #     "cqlsh -e \"CREATE KEYSPACE demo WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"")
+    # ============================================================
+    # Start the Cassandra node
 
     output += "Starting cassandra...\n"
     run("/autograder/source/before_run_autograder.sh")
+    # ============================================================
 
+    # ============================================================
+    # Run the tests
     output += "Running Tests...\n"
     print()
     print("running tests...")
@@ -138,62 +135,151 @@ def main():
     print(run_proc_stderr)
     print()
 
+    print("Tests finished running.")
+    output += "Tests finished running.\n"
+    # ============================================================
+    
+
+
+    # ============================================================
+    # 
+    # max_score = 0.0
+    # accu_score = 0.0
+    # target_score = 10.0
+    autograder_score = 12.0
+   
+    test_names = ["test01", "test02", "test03", "test04", "test05", "test06"]
+    scores = [0.0, 5.0, 5.0, 5.0, 10.0, 5.0]  # received scores of test1~6
+
     if run_proc.returncode != 0:
         output += "Java runtime error\n"
-        raise SubmissionError(output)
+        ntest_passed = capture_passed_test(run_proc_stderr)
+        test_score = sum(scores[:ntest_passed])
+    else:
+        output += "All tests passed\n"
+        ntest_passed = len(test_names)
+        test_score = sum(scores)
+    
+    EXCEPTION_RAISED = False
+    if capture_exception(run_proc_stderr):
+            EXCEPTION_RAISED = True
+            output += "Exception:\n"
+            output += capture_exception(run_proc_stderr)
+            output += "\n"
+            print("stderr output indicates unexpected exceptions (e.g., ArrayOutofBounds, NullPointer or others) because of inadequate checks in code.")
+            print(f"lose 1 point out of {autograder_score} ({autograder_score - 1} points remain)")
 
-    output += "Tests finished running successfully\n"
+    # adjust the score to the autograder score scale
+    max_score = sum(scores)
+    final_score = (test_score / max_score) * autograder_score
 
-    #start_pos = run_proc_stdout.rfind('{')  # get the position of the last occurrence of {
-    #if start_pos != -1:
-    #    json_content = run_proc_stdout[start_pos:]
-    #    print(json_content)
-    #    result = json.loads(json_content)
-    #    result["output"] = output
-    #else:
-    #    raise SubmissionError("No JSON content found in run_proc_stdout.")
+    if EXCEPTION_RAISED:  # if exception is raised, lose 1 point
+        final_score -= 1.0
+        if final_score < 0:  # score cannot be negative
+            final_score = 0.0
+    
+    test_names_passes = [n for n in test_names[:ntest_passed]]
+    run_proc_stdout = run_proc_stdout + "\n" + \
+        f"Passed tests: {', '.join(test_names_passes)}\n" + \
+        f"The total score is {test_score} out of {max_score}\n" + \
+        f"After adjustment, the final score is {final_score} out of {autograder_score}\n" 
 
+        
 
-    #result = json.loads(run_proc_stdout)
-    #result["output"] = output
+    # json_str_match = re.search(r'{.*}', run_proc_stdout, re.DOTALL)
+    # if json_str_match:
+    #     json_str = json_str_match.group(0)
+    #     results = json.loads(json_str)
+    #     test_list = results["tests"]
+    #     for test in test_list[:-1]:
+    #         print(" ")
+    #         print(test)
+    #         print(" ")
+    #         max_score += test["max_score"]
+    #         accu_score += test["score"]
+    #     print(f"The total score is {accu_score} out of {max_score}")
+    #     final_score = (accu_score / max_score) * target_score
+    #     print(f"After adjustment, the score is {final_score} out of {target_score}")
+    # else:
+    #     print("No JSON found in the output")
+
     result = {}
-    result["score"] = 10.0
+    result["score"] = final_score
     result["output"] = run_proc_stdout
     result["extra_data"] = {}
+    result["stdout_visibility"] = "visible"
+    # ============================================================
 
-    output += "Clean up kep space...\n"
+    # ============================================================
+    output += "Clean up keyspace...\n"
     run("/autograder/source/after_run_autograder.sh")
+    # ============================================================
 
     return result
+
+def capture_passed_test(output):
+    ntest_passed = 6
+    keywords = [
+        "test01",
+        "test02",
+        "test03",
+        "test04",
+        "test05",
+        "test06"
+    ]
+    lines = output.split("\n")
+    for line in lines:
+        if "test06" in line:
+            ntest_passed = 5
+            break
+        elif "test05" in line:
+            ntest_passed = 4
+            break
+        elif "test04" in line:
+            ntest_passed = 3
+            break
+        elif "test03" in line:
+            ntest_passed = 2
+            break
+        elif "test02" in line:
+            ntest_passed = 1
+            break
+        else:
+            ntest_passed = 0
+    return ntest_passed
 
 
 def filter_unwanted_messages(output):
     # List of unwanted messages or warnings
     unwanted_patterns = [
-        "WARNING: An illegal reflective access operation has occurred",
-        "WARNING: Illegal reflective access",
-        "WARNING: Please consider reporting this to the maintainers of",
-        "WARNING: Use --illegal-access=warn to enable warnings",
-        "WARNING: All illegal access operations will be denied",
+        # "WARNING: An illegal reflective access operation has occurred",
+        # "WARNING: Illegal reflective access",
+        # "WARNING: Please consider reporting this to the maintainers of",
+        # "WARNING: Use --illegal-access=warn to enable warnings",
+        # "WARNING: All illegal access operations will be denied",
+        "WARNING"
         "Netty Epoll Transport",
         "Platform Low-Level API",
         "INFO",
         "NIOTransport",
         "handleMessageFromClient"
     ]
-    # Filter out unwanted lines
+
     lines = output.split("\n")
     filtered_lines = [line for line in lines if not any(pattern in line for pattern in unwanted_patterns)]
     return "\n".join(filtered_lines)
 
-
-
-# def run(cmd, capture_output=False):
-    # stdout = subprocess.PIPE if capture_output else None
-    # stderr = subprocess.PIPE if capture_output else None
-
-    # return subprocess.run(cmd, cwd=SUBMISSION_DIR, shell=True, stdout=stdout, stderr=stderr)
-
+def capture_exception(output):
+    keywords = [
+        "Exception",
+        "exception"
+    ]
+    lines = output.split("\n")
+    for line in lines:
+        for keyword in keywords:
+            if keyword in line:
+                return line
+    return None
 
 def run(cmd, capture_output=False):
     stdout = subprocess.PIPE if capture_output else None
@@ -220,6 +306,7 @@ if __name__ == "__main__":
         result["extra_data"] = {}
         result["extra_data"]["extra_msg"] = err.extra_msg
         result["extra_data"]["err_tb"] = traceback.format_exc()
+        result["stdout_visibility"] = "visible"
     except Exception as err:
         result = {}
         result["score"] = 0.0
@@ -227,6 +314,7 @@ if __name__ == "__main__":
         result["extra_data"] = {}
         result["extra_data"]["err_msg"] = str(err)
         result["extra_data"]["err_tb"] = traceback.format_exc()
+        result["stdout_visibility"] = "visible"
 
     try:
         output_json(result)
