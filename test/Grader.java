@@ -1,13 +1,13 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.gradescope.jh61b.grader.GradedTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
@@ -273,6 +273,46 @@ public class Grader extends GraderSingleServer {
         Thread.sleep(SLEEP * NUM_REQS / SLEEP_RATIO);
 
         verifyOrderConsistent(DEFAULT_TABLE_NAME, key, true, NUM_REQS);
+    }
+
+    @Test
+    @GradedTest(name = "test18_GloballyCommittedCheck()", max_score = 5)
+    public void test18_GloballyCommittedCheck() throws InterruptedException,
+            IOException {
+        int key = ThreadLocalRandom.current().nextInt();
+
+        // insert a record first with an empty list, it doesn't matter which server we use, it should be consistent
+        client.send(serverMap.get(servers[0]), insertRecordIntoTableCmd(key, DEFAULT_TABLE_NAME));
+        // this sleep is to guarantee that the record has been created
+        Thread.sleep(SLEEP);
+
+        // do one insert
+        int randomServerIndex = ThreadLocalRandom.current().nextInt(0,
+                servers.length);
+        waitResponse(callbackSend(serverMap.get(servers[randomServerIndex]),
+                updateRecordOfTableCmd(key,  DEFAULT_TABLE_NAME)), SLEEP);
+
+        Assert.assertTrue("callbackSend callback never invoked",
+                this.outstanding.isEmpty());
+
+        // check that every single server has exactly one element inserted
+        long expectedValue = GraderSingleServer.sequencer-1;
+        ArrayList<Integer>[] results = new ArrayList[servers.length];
+        ArrayList<Integer> expected = new ArrayList<Integer>();
+        expected.add((int)expectedValue);
+        int i=0;
+        for (String node : servers) {
+            ResultSet result = session.execute(readResultFromTableCmd(key, DEFAULT_TABLE_NAME, node));
+            results[i] = new ArrayList<Integer>();
+            for (Row row : result) {
+                results[i] = new ArrayList<Integer>(row.getList("events",
+                        Integer.class));
+                Assert.assertTrue(node +": mismatch: Expected array [ " +
+                        expectedValue + "] !=  " + results[i],
+                        results[i].equals(expected));
+            }
+            i++;
+        }
     }
 
     @AfterClass
