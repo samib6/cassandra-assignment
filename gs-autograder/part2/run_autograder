@@ -19,10 +19,8 @@ RESULTS_DIR = "/autograder/results"
 END_RESULTS = f"{RESULTS_DIR}/results.json"
 
 TEST1_PASS = False
-TEST1_TIMEOUT = False
-
+TEST_TIMEOUT = False
 TEST2_PASS = False
-TEST2_TIMEOUT = False
 
 
 class SubmissionError(Exception):
@@ -33,9 +31,8 @@ class SubmissionError(Exception):
 
 def main():
     global TEST1_PASS
-    global TEST1_TIMEOUT
+    global TEST_TIMEOUT
     global TEST2_PASS
-    global TEST2_TIMEOUT
 
     print(datetime.now())
     print()
@@ -71,7 +68,7 @@ def main():
     if not (client_exists and server_exists):
         raise SubmissionError(output)
 
-    # ============================================================
+
     # Reset the source directory
     output += "Resetting all other files to their original form\n"
     run(f"rm {SOURCE_DIR}/framework/src/client/MyDBClient.java")
@@ -91,19 +88,24 @@ def main():
     except:
         pass
 
+
     run("rm -r *")
     run(f"cp -r {SOURCE_DIR}/framework/* .")  # copy all files from source dir to submission dir
 
-    # ============================================================
-    # Complie the code
 
+
+
+    # Complie the code
     output += "Compiling...\n"
-    print()
     print("compiling...")
-    print()
 
     jar_files = ["lib/" + x for x in os.listdir(f"{SUBMISSION_DIR}/lib")]
     java_files = glob.glob(f"{SUBMISSION_DIR}/src/**/*.java", recursive=True)
+
+    # remove AVDB*.java files if they exist
+    java_files = [x for x in java_files if not x.startswith(f"{SUBMISSION_DIR}/src/server/AVDB")]
+    java_files = [x for x in java_files if not x.startswith(f"{SUBMISSION_DIR}/src/client/AVDB")]
+
     test_java_files = [
     	"test/GraderSingleServer.java",
     	"test/GraderSingleServerGradescope.java",
@@ -135,237 +137,262 @@ def main():
         output += "Java compilation error:\n"
         output += compile_proc_stderr
         raise SubmissionError(output)
-
     output += "Compilation successful\n"
 
-    output += "All expected .java files found and successfully compiled. "
-    # ============================================================
 
-    # ============================================================
     # Start the Cassandra node
     print("Starting Cassandra...")
     output += "Starting cassandra...\n"
     run("/autograder/source/before_run_autograder.sh")
-    # ============================================================
 
-    # ============================================================
+
     # Run the public tests
-    output += "Running Tests...\n"
-    print()
-    print("Running public unit tests...")
-    print()
+    output += "Running Public Tests...\n"
+    NUN_TEST = 3
+    average_pub_test_score = 0.0
+    for n in range(1, NUN_TEST + 1):
+        print(f"Running public unit tests... {n}-th round")
+        run_proc = run(
+            f"java -cp src:test:{':'.join(jar_files)} GraderGradescope",
+            capture_output=True,
+            timeout=90 
+        )
+        run_proc_stdout = run_proc.stdout.decode('utf-8')
+        run_proc_stderr = run_proc.stderr.decode('utf-8')
 
+        output += f"Public test stdout at round {n}:\n"
+        output += run_proc_stdout
+        output += f"Public test stderr at round {n}:\n"
+        output += run_proc_stderr
+        # print(run_proc.args)
+        # print(run_proc_stdout)
+        # print()
+        # print("runtime stderr:")
+        # print(filter_unwanted_messages(run_proc_stderr))
+        # print()
 
-    run_proc = run(
-        f"java -cp src:test:{':'.join(jar_files)} GraderGradescope",
-        capture_output=True,
-        timeout=90 
-    )
+        # Parse stdout to get test names and their max scores
+        TestNameAndScore = {}
+        for line in run_proc_stdout.strip().split("\n"):
+            match = re.search(r"testName=(\w+)\smax_score=([\d\.]+)", line)
+            if match:
+                test_name = match.group(1)
+                max_score = float(match.group(2))
+                TestNameAndScore[test_name] = {"max_score": max_score}
+        TestNameAndScore = dict(sorted(TestNameAndScore.items(), key=lambda x: x[0]))
 
-    run_proc_stdout = run_proc.stdout.decode('utf-8')
-    run_proc_stderr = run_proc.stderr.decode('utf-8')
+        test_score = 0.0
+        test1_autograder_score = 25.0
+        test1_max_score = 0.0
 
-    output += "Public unit tests finished running.\n"
-    print("Public unit tests finished running.")
-
-    print(run_proc.args)
-    print("runtime stdout:")
-    print(run_proc_stdout)
-    print()
-    print("runtime stderr:")
-    print(run_proc_stderr)
-    print()
-    # ============================================================
-
-    # ============================================================
-    # Calculate the score
-
-    # Parse stdout to get test names and their max scores
-    TestNameAndScore = {}
-    for line in run_proc_stdout.strip().split("\n"):
-        match = re.search(r"testName=(\w+)\smax_score=([\d\.]+)", line)
-        if match:
-            test_name = match.group(1)
-            max_score = float(match.group(2))
-            TestNameAndScore[test_name] = {"max_score": max_score}
-    TestNameAndScore = dict(sorted(TestNameAndScore.items(), key=lambda x: x[0]))
-
-    test_score = 0.0
-    test1_autograder_score = 25.0
-    test1_max_score = 0.0
-
-    # if a timeout occurs 
-    if run_proc.returncode == -1:
-        print("A timeout has occurred when running the tests.")
-        print("Deducting 1 point for TIMEOUT error (probably not terminating cleanly).")
-        test1_autograder_score -= 1.0
-        print(f"{test1_autograder_score} points remain")
-        TEST1_TIMEOUT = True
-    
-    # Get the total max score
-    for test_name, test_info in TestNameAndScore.items():
-        test1_max_score += test_info["max_score"]
-
-    # If any error occurs
-    if run_proc.returncode != 0: 
-        output += "Java runtime error\n"
-        # raise SubmissionError(output)
-        failed_test_name, failed_test_num = capture_failed_test(run_proc_stderr)
-        print(f"The submission failed at : {failed_test_name}")
-
-        # Sum up the scores before the failed test 
-        for test_name, test_info in TestNameAndScore.items(): 
-            if test_name == failed_test_name:
-                break
-            received_score = test_info["max_score"]
-            print(f"testname: {test_name}; get {received_score } points")
-            test_score += received_score 
+        # if a timeout occurs 
+        if run_proc.returncode == -1 and TEST_TIMEOUT is not True:
+            print()
+            print("A timeout has occurred when running the tests.")
+            print("Deducting 1 point of total score for TIMEOUT error (probably not terminating cleanly).")
+            print()
+            TEST_TIMEOUT = True
         
-    # If all tests pass
-    else:
-        failed_test_name = None
-        failed_test_num = None
-        TEST1_PASS = True
-        test_score = test1_max_score
+        # Get the total max score
+        for test_name, test_info in TestNameAndScore.items():
+            test1_max_score += test_info["max_score"]
+        if test1_max_score == 0:
+            print("The grader crashed. Please refer to the following stderr output:")
+            print(run_proc_stderr)
+            print()
+            print(f"You received {0} out of {test1_autograder_score} at the private tests at the {n}-th round")
+            print()
+            continue
 
-    test1_final_score = (test_score / test1_max_score) * test1_autograder_score
+        # If any error occurs
+        if run_proc.returncode != 0: 
+            output += "Java runtime error\n"
+            # raise SubmissionError(output)
+            failed_test_name, failed_test_num = capture_failed_test(run_proc_stderr)
+            print(f"The submission failed at : {failed_test_name}")
+            print("The tests you passed:")
+            # Sum up the scores before the failed test 
+            for test_name, test_info in TestNameAndScore.items(): 
+                if test_name == failed_test_name:
+                    break
+                received_score = test_info["max_score"]
+                print(f"testname: {test_name}; get {received_score } points")
+                test_score += received_score 
+        else:
+            print("All tests pass!")
+            failed_test_name = None
+            failed_test_num = None
+            TEST1_PASS = True
+            test_score = test1_max_score
 
-    # If any exception occurs
-    if capture_exception(run_proc_stderr):
-        output += "Exception:\n"
-        output += capture_exception(run_proc_stderr)
-        output += "\n"
-        print("Stderr output indicates unexpected exceptions (e.g., ArrayOutofBounds, NullPointer or others) because of inadequate checks in code.")
-        print(f"Lose 1 point out of {test1_autograder_score} ({test1_autograder_score - 1} points remain)")
-        test1_final_score -= 1.0
-        if test1_final_score < 0:  # score cannot be negative
-            test1_final_score = 0.0
+        test1_final_score = (test_score / test1_max_score) * test1_autograder_score
 
-    output += f"Public test final score: {test1_final_score}\n"
-    print(f"You received {test_score} out of {test1_max_score} in the public tests")
-    print(f"Public test final_score: {test1_final_score} out of {test1_autograder_score}")
-    # ============================================================
+        # If any exception occurs
+        if capture_exception(run_proc_stderr):
+            output += "Exception:\n"
+            output += capture_exception(run_proc_stderr)
+            output += "\n"
+            print("Stderr output indicates unexpected exceptions (e.g., ArrayOutofBounds, NullPointer or others) because of inadequate checks in code.")
+            print(f"Lose 1 point out of {test1_autograder_score}; {test1_autograder_score - 1} points remain at the public test round {n}")
+            test1_final_score -= 1.0
+            if test1_final_score < 0:  # score cannot be negative
+                test1_final_score = 0.0
 
-    # ============================================================
+        average_pub_test_score += test1_final_score
+        print(f"You received {test1_final_score} out of {test1_autograder_score} at the public tests at the {n}-th round")
+    
+    average_pub_test_score /= NUN_TEST
+    print(f"The average score of the public tests (acorss 3 rounds) is {average_pub_test_score} out of {test1_autograder_score}")
+
+
+
+
+
+
+
+
+
+
     # Run the private tests
     output += "Running Private Tests...\n"
-    print()
     print("Running private unit tests...")
-    print()
 
+    NUN_TEST = 3
+    average_pri_test_score = 0.0
+    for n in range(1, NUN_TEST + 1):
 
-    run_proc = run(
-        f"java -cp src:test:{':'.join(jar_files)} -Dconfig={SOURCE_DIR}/framework/conf/servers_20.properties GraderGradescope",
-        capture_output=True,
-        timeout=90 
-    )
+        print(f"Running private unit tests... {n}-th round")
+        run_proc = run(
+            f"java -cp src:test:{':'.join(jar_files)} -Dconfig={SOURCE_DIR}/framework/conf/servers_20.properties GraderGradescope",
+            capture_output=True,
+            timeout=90 
+        )
+        run_proc_stdout = run_proc.stdout.decode('utf-8')
+        run_proc_stderr = run_proc.stderr.decode('utf-8')
 
-    run_proc_stdout = run_proc.stdout.decode('utf-8')
-    run_proc_stderr = run_proc.stderr.decode('utf-8')
+        output += f"Private test stdout at round {n}:\n"
+        output += run_proc_stdout
+        output += f"Private test stderr at round {n}:\n"
+        output += run_proc_stderr
+        # print()
+        # print("runtime stderr:")
+        # print(filter_unwanted_messages(run_proc_stderr))
+        # print()
 
-    output += "Private unit tests finished running.\n"
-    print("Private unit tests finished running.")
+        TestNameAndScore = {}
+        for line in run_proc_stdout.strip().split("\n"):
+            match = re.search(r"testName=(\w+)\smax_score=([\d\.]+)", line)
+            if match:
+                test_name = match.group(1)
+                max_score = float(match.group(2))
+                TestNameAndScore[test_name] = {"max_score": max_score}
+        TestNameAndScore = dict(sorted(TestNameAndScore.items(), key=lambda x: x[0]))
 
-    print(run_proc.args)
-    print("runtime stdout:")
-    print(run_proc_stdout)
-    print()
-    print("runtime stderr:")
-    print(run_proc_stderr)
-    print()
+        test_score = 0.0
+        test2_autograder_score = 30.0
+        test2_max_score = 0.0
 
-    # keep the stdout and stderr in test 1
-    run_proc_stdout_test1 = run_proc_stdout
-    run_proc_stderr_test1 = run_proc_stderr
-    # ============================================================
-
-    # ============================================================
-    TestNameAndScore = {}
-    for line in run_proc_stdout.strip().split("\n"):
-        match = re.search(r"testName=(\w+)\smax_score=([\d\.]+)", line)
-        if match:
-            test_name = match.group(1)
-            max_score = float(match.group(2))
-            TestNameAndScore[test_name] = {"max_score": max_score}
-    TestNameAndScore = dict(sorted(TestNameAndScore.items(), key=lambda x: x[0]))
-
-    test_score = 0.0
-    test2_autograder_score = 30.0
-    test2_max_score = 0.0
-
-    # if a timeout occurs 
-    if run_proc.returncode == -1:
-        print("A timeout has occurred when running the tests.")
-        if TEST1_TIMEOUT:
-            print("Have deducted 1 point for TIMEOUT error in the public tests.")
-            print("Be lanient int the private test. No further deduction.")
-        else:
-            print("Deducting 1 point for TIMEOUT error (probably not terminating cleanly).")
-            test2_autograder_score -= 1.0
-            print(f"{test2_autograder_score} points remain")
-            TEST2_TIMEOUT = True
-    
-    # Get the total max score in this test
-    for test_name, test_info in TestNameAndScore.items():
-        test2_max_score += test_info["max_score"]
-
-    # If any error occurs
-    if run_proc.returncode != 0: 
-        output += "Java runtime error\n"
-        failed_test_name, failed_test_num = capture_failed_test(run_proc_stderr)
-        print(f"The submission failed at : {failed_test_name}")
-        # Sum up the scores before the failed test 
-        for test_name, test_info in TestNameAndScore.items(): 
-            if test_name == failed_test_name:
-                break
-            received_score = test_info["max_score"]
-            print(f"testname: {test_name}; get {received_score } points")
-            test_score += received_score 
+        # if a timeout occurs 
+        if run_proc.returncode == -1 and TEST_TIMEOUT is not True:
+            print()
+            print("A timeout has occurred when running the tests.")
+            print("Deducting 1 point of total score for TIMEOUT error (probably not terminating cleanly).")
+            print()
+            TEST_TIMEOUT = True
         
-    # If all tests pass
-    else:
-        failed_test_name = None
-        failed_test_num = None
-        TEST2_PASS = True
-        test_score = test2_max_score
+        # Get the total max score in this test
+        for test_name, test_info in TestNameAndScore.items():
+            test2_max_score += test_info["max_score"]
+        if test2_max_score == 0:
+            print("The grader crashed. Please refer to the following stderr output:")
+            print(run_proc_stderr)
+            print()
+            print(f"You received {0} out of {test2_autograder_score} at the private tests at the {n}-th round")
+            print()
+            continue
 
-    test2_final_score = (test_score / test2_max_score) * test2_autograder_score
+            
 
-    # If any exception occurs
-    if capture_exception(run_proc_stderr):
-        output += "Exception:\n"
-        output += capture_exception(run_proc_stderr)
-        output += "\n"
-        print("Stderr output indicates unexpected exceptions (e.g., ArrayOutofBounds, NullPointer or others) because of inadequate checks in code.")
-        print(f"Lose 1 point out of {test2_autograder_score} ({test2_autograder_score - 1} points remain)")
-        test2_final_score -= 1.0
-        if test2_final_score < 0:  # score cannot be negative
-            test2_final_score = 0.0
+        # If any error occurs
+        if run_proc.returncode != 0: 
+            output += "Java runtime error\n"
+            failed_test_name, failed_test_num = capture_failed_test(run_proc_stderr)
+            print(f"The submission failed at : {failed_test_name}")
+            print("The tests you passed:")
+            # Sum up the scores before the failed test 
+            for test_name, test_info in TestNameAndScore.items(): 
+                if test_name == failed_test_name:
+                    break
+                received_score = test_info["max_score"]
+                print(f"testname: {test_name}; get {received_score } points")
+                test_score += received_score 
+        
+        # If all tests pass
+        else:
+            print("All tests pass!")
+            failed_test_name = None
+            failed_test_num = None
+            TEST2_PASS = True
+            test_score = test2_max_score
 
-    output += f"Private test_final_score: {test2_final_score}\n"
-    print(f"You received {test_score} out of {test2_max_score} in the private tests")
-    print(f"Private test final_score: {test2_final_score} out of {test2_autograder_score}")
-    # ============================================================
+        test2_final_score = (test_score / test2_max_score) * test2_autograder_score
 
-    # ============================================================
-    # Preprare gradescope result
-    final_score = test1_final_score + test2_final_score
-    print(f"You received {test1_final_score} points out of {test1_autograder_score} in the public tests")
-    print(f"You received {test2_final_score} points out of {test2_autograder_score} in the private tests")
-    print(f"The final score is {final_score}.")
+        # If any exception occurs
+        if capture_exception(run_proc_stderr):
+            output += "Exception:\n"
+            output += capture_exception(run_proc_stderr)
+            output += "\n"
+            print()
+            print("Stderr output indicates unexpected exceptions (e.g., ArrayOutofBounds, NullPointer or others) because of inadequate checks in code.")
+            print(f"Lose 1 point out of {test2_autograder_score}; {test2_autograder_score - 1} points remain at the private test round {n}")
+            print()
+            test2_final_score -= 1.0
+            if test2_final_score < 0:  # score cannot be negative
+                test2_final_score = 0.0
+
+        average_pri_test_score += test2_final_score
+        print()
+        print(f"You received {test2_final_score} out of {test2_autograder_score} at the private tests at the {n}-th round")
+        print()
+    
+    average_pri_test_score /= NUN_TEST
+    print()
+    print(f"The average score of the private tests (acorss 3 rounds) is {average_pri_test_score} out of {test2_autograder_score}")
+    print()
+
+
+
+
+
+
+    # Prepare the autograder result
+    final_score = average_pub_test_score + average_pri_test_score 
+    
+    if TEST_TIMEOUT:  # If timeout, deduct 1 point
+        print(f"Deducting 1 point out of {final_score} due to TIMEOUT error.")
+        final_score -= 1.0
+
+    final_score = final_score * 50 / 55  # scale to 50 points
+
+    
+    print("Summary:")
+    print(f"You received {average_pub_test_score} points out of {test1_autograder_score} at the public tests")
+    print(f"You received {average_pri_test_score } points out of {test2_autograder_score} at the private tests")
+    print(f"After scaling to the maximum autograder score (55 -> 50), the final score is {final_score}.")
+
 
 
     result = {}
     result["score"] = final_score
-    result["output"] = run_proc_stdout + "\n" + run_proc_stdout_test1
+    result["output"] = output
     result["extra_data"] = {}
     result["stdout_visibility"] = "visible"
     
 
     # ============================================================
-    # Clean up
-    output += "Clean up keyspace...\n"
-    run("/autograder/source/after_run_autograder.sh")
+    # # Clean up
+    # output += "Clean up keyspace...\n"
+    # run("/autograder/source/after_run_autograder.sh")
     # ============================================================
 
     return result
@@ -398,14 +425,8 @@ def capture_exception(output):
 
 def filter_unwanted_messages(output):
     unwanted_patterns = [
-        "WARNING"
-        "Netty Epoll Transport",
-        "Platform Low-Level API",
-        "INFO",
-        "NIOTransport",
-        "handleMessageFromClient",
-        "handleMessageFromServer",
-        "broadcastRequest"
+        "WARNING",
+        "warning"
     ]
 
     lines = output.split("\n")
@@ -526,3 +547,5 @@ if __name__ == "__main__":
             print(f.read())
     except:
         traceback.print_exc()
+
+
