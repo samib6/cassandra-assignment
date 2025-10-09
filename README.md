@@ -27,7 +27,6 @@ You need to implement the following two programs (shown in yellow) in the figure
 You will need to complete the following steps before you can get started on the assignment.
 
 * **Step 1**: Check out the git repository for 578 using the following shell command:
-    ~~`git clone git@bitbucket.org:distrsys/consistent-db.git`~~
     `git clone https://avenka@bitbucket.org/distrsys/consistent-db.git`
 
 * **Step 2**: You need Java 8 or higher on your machine for the assignment code provided. You may need a higher minor or major version number depending on the Cassandra version you use.
@@ -82,7 +81,7 @@ Note that the simple `Client.send` is non-blocking and is the only way to send r
 **Tips**
 
 1. You should be able to test-drive all supplied classes including `Grader*` by simply running them using their main methods.
-2. ~~The documentation of the `edu.umass.cs.nio` library being used is included in the provided source jar `gigapaxos-nio-src.jar`. It does indeed ensure reliable message delivery so that you don’t have to worry about networking issues.~~ You don't need to understand details of how nio works for this assignment, just that it provides reliable delivery.
+2. You don't need to understand details of how nio works for this assignment, just that it provides reliable delivery.
 3. While testing, make sure you create any keyspace as needed on your local Cassandra instance before running `Grader*`.
 4. Methods in `Client.java` and `SingleServer.java` whose behavior needs to be modified are marked TODO and accordingly need to be overwritten in the child classes you implement.
 
@@ -98,7 +97,7 @@ Your code must respect the following constraints and testing assumptions:
 
 1. As before, you can not modify `Client.java` and `SingleServer.java`. 
 2. The only Cassandra *write* operations with which we will test are `create, insert, update, drop, and truncate`. All other operations are considered *reads*.
-3. The `Grader` ~~will~~ currently only sends requests from a single client instance, but the non-blocking API means that concurrent requests will inevitably get dispatched. Your design must work correctly even when tested with multiple client instances.
+3. The `Grader`  currently only sends requests from a single client instance, but the non-blocking API means that concurrent requests will inevitably get dispatched. Your design must work correctly even when tested with multiple client instances.
 4. Do not use `sleep` in your client or server code. That would be "cheating" because, as you can see from the Grader's tests, it's ability to blast requests quickly is important to stress test your code.
 5. Do not use any global data structures (i.e., static variables) because a global data structure doesn't exist in a distributed system (but exists in our single-JVM testing environment.)
 6. As before, the server receiving a client request should send some response back to that client, but with the following modified requirement: for write operations, the response conveys *globally committed* semantics, i.e., the write has been executed by every replica server (thus a subsequent read at any server replica must reflect completion of that write).
