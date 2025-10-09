@@ -33,6 +33,8 @@ You will need to complete the following steps before you can get started on the 
 
 * **Step 3**: Complete the Cassandra [Getting Started tutorial](https://docs.google.com/document/d/1pt2GrLv4P-JtvASM0tpqQhf1f58vNtDHagDc2Uef9CY/edit?usp=sharing). By the end of the tutorial, you should know how to write a Java client to create a keyspace, create a table, insert some records, read records, delete records, etc.
 
+Because of Gradescope Docker constraints, we are currently limited to using Cassandra 4.* (not 5) and for that reason also to Java 11, not Java 17. Please make sure to not exceed these versions in order for the autograder to work as expected.
+
 ## 3. Assignment Activities ##
 
 The assignment has been broken down into two progressive parts with separate deadlines, the second building upon the first one. This organization is so that first part is relatively simple and acts as a forcing function for you to complete the “getting started” assignment activities in a timely manner; otherwise students tend to start from scratch on the entire assignment close to the submission deadline and end up getting overwhelmed. 
