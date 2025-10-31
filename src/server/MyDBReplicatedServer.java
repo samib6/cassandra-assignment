@@ -386,6 +386,7 @@ public class MyDBReplicatedServer extends MyDBSingleServer {
         this.serverMessenger.stop();
         if (session != null) session.close();
         if (cluster != null) cluster.close();
+    
     }
 
     /**
