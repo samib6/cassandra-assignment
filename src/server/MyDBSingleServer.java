@@ -47,6 +47,7 @@ public class MyDBSingleServer extends SingleServer {
             String[] parts = received.split("::", 2);
             requestId = parts[0];
             query = parts[1];
+            System.out.println("Received requestId: " + requestId + " with query: " + query);
         }
 
         String response;
