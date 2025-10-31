@@ -386,6 +386,24 @@ public class MyDBReplicatedServer extends MyDBSingleServer {
         this.serverMessenger.stop();
         if (session != null) session.close();
         if (cluster != null) cluster.close();
+<<<<<<< HEAD
+=======
+    }
+
+    /**
+     * Run multiple servers based on properties file, same interface as ReplicatedServer main.
+     */
+    public static void main(String[] args) throws IOException {
+        if (args.length > 1) {
+            for (int i = 1; i < args.length; i++) {
+                new MyDBReplicatedServer(NodeConfigUtils.getNodeConfigFromFile(args[0],
+                        ReplicatedServer.SERVER_PREFIX, ReplicatedServer.SERVER_PORT_OFFSET),
+                        args[i].trim(), new InetSocketAddress("localhost", 9042));
+            }
+        } else {
+            log.info("Incorrect number of arguments; not starting any server");
+        }
+>>>>>>> 2b6a283 (Distributed middleware for totally ordered writes)
     }
 
     /**
